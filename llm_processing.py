@@ -159,7 +159,7 @@ def _call_gemini(
 
     full_prompt = SYSTEM_PROMPT_DDR + "\n\n" + user_content + "\n\nRespond with JSON only."
 
-    gm = genai.GenerativeModel(model)
+    gm = genai.GenerativeModel("gemini-1.0-pro")
 
     gen_cfg: Dict[str, Any] = {
         "temperature": 0.2,
@@ -207,7 +207,7 @@ def generate_ddr_json(
 
     provider = os.environ.get("DDR_LLM_PROVIDER", "openai").lower().strip()
     openai_model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-1.5-pro")
+    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-1.0-pro")
     
     key = cache_key(
         inspection_text,

@@ -143,13 +143,14 @@ def _call_gemini(
     image_basenames: List[str],
     model: str,
 ) -> Dict[str, Any]:
-    import google.generativeai as genai
 
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    from google import genai
+
+    api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY or GOOGLE_API_KEY is not set.")
+        raise RuntimeError("GEMINI_API_KEY is not set.")
 
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     user_content = USER_PROMPT_TEMPLATE.format(
         inspection_text=inspection_text[:120000],
@@ -157,41 +158,25 @@ def _call_gemini(
         image_list=json.dumps(image_basenames),
     )
 
-    full_prompt = SYSTEM_PROMPT_DDR + "\n\n" + user_content + "\n\nRespond with JSON only."
-
-    gm = genai.GenerativeModel("gemini-1.0-pro")
-
-    gen_cfg: Dict[str, Any] = {
-        "temperature": 0.2,
-        "response_mime_type": "application/json",
-    }
+    full_prompt = SYSTEM_PROMPT_DDR + "\n\n" + user_content
 
     try:
-        resp = gm.generate_content(full_prompt, generation_config=gen_cfg)
-    except Exception:
-        resp = gm.generate_content(
-            full_prompt,
-            generation_config={"temperature": 0.2},
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=full_prompt,
         )
 
-    raw = (getattr(resp, "text", None) or "").strip()
+        raw = response.text
 
-    if not raw and getattr(resp, "candidates", None):
-        for c in resp.candidates:
-            if getattr(c, "content", None) and c.content.parts:
-                raw = "".join(
-                    getattr(p, "text", "") for p in c.content.parts
-                ).strip()
-                break
-
-    try:
         data = safe_json_loads(raw)
+
         if not isinstance(data, dict):
             raise ValueError("Invalid JSON structure")
+
     except Exception as e:
-        logger.error(f"Gemini JSON parsing failed: {e}")
+        logger.error(f"Gemini failed: {e}")
         data = _default_ddr_structure()
-        data["additional_notes"] = f"Gemini response parsing failed: {e}"
+        data["additional_notes"] = f"Gemini failed: {e}"
 
     return data
 

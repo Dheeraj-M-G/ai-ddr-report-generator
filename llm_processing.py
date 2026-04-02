@@ -207,8 +207,8 @@ def generate_ddr_json(
 
     provider = os.environ.get("DDR_LLM_PROVIDER", "openai").lower().strip()
     openai_model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
-
+    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-1.5-pro")
+    
     key = cache_key(
         inspection_text,
         thermal_text,
